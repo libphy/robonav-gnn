@@ -1,2 +1,2 @@
 # robonav-gnn
-CS224W Fall21 project
+GNN application ideas to robotic navigation problem.

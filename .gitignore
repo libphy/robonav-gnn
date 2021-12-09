@@ -131,3 +131,4 @@ dmypy.json
 # Custom place
 temp/
 */temp/
+.DS_Store

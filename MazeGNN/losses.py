@@ -1,11 +1,7 @@
 import torch
-<<<<<<< HEAD
 import math
 import numpy as np
-=======
 import torch_geometric.transforms as T
-
->>>>>>> d5ecd6310cec4c29d86a7c1bd8ab7e324033a233
 
 def kmeansloss(cluster_assignment, coords):
     loss_d=0
@@ -23,7 +19,6 @@ def kmeansloss(cluster_assignment, coords):
         xi = torch.masked_select(coords[:,0], cluster_assignment.max(axis=1).indices==k) 
         yi = torch.masked_select(coords[:,1], cluster_assignment.max(axis=1).indices==k)
         coords_in_cluster = torch.concat((xi[:, None],yi[:, None]),axis=-1)
-<<<<<<< HEAD
 #         centroids.append(torch.mean(coords_in_cluster,axis=0))
 #     print(centroids)    
 #     for k in range(num_clusters):
@@ -44,7 +39,6 @@ def kmeansloss(cluster_assignment, coords):
     #print('loss_d', loss_d, 'reg_num', reg_num)
     loss = loss_d+reg_assn+reg_num
     return loss   
-=======
 
 def dmonloss(assignments, edge_index, collapse_regularization)
     

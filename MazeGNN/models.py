@@ -163,7 +163,6 @@ class DMoN(torch.nn.Module):
 
     
     assert isinstance(features, Tensor)
-    assert isinstance(adjacency, SparseTensor) #not sure SparseTensor is correct here
     assert len(features.shape) == 2
     assert len(adjacency.shape) == 2
     assert features.shape[0] == adjacency.shape[0]
@@ -172,37 +171,7 @@ class DMoN(torch.nn.Module):
     cluster_sizes = torch.sum(assignments, dim=0).item()  # Size [k]. Need to get float from tensor, item() should work...
     assignments_pooling = assignments / cluster_sizes  # Size [n, k].
 
-    degrees = torch.sparse.sum(adjacency, dim=0)  # Size [n].
-    degrees = torch.reshape(degrees, (-1, 1))
-
-    number_of_nodes = adjacency.shape[1]
-    number_of_edges = torch.sum(degrees).item() # check you get float here, not tensor
-
-    # Computes the size [k, k] pooled graph as S^T*A*S in two multiplications.
-    graph_pooled = torch.transpose(
-        torch.sparse.mm(adjacency, assignments))
-    graph_pooled = torch.mm(graph_pooled, assignments)
-
-    # We compute the rank-1 normalizer matrix S^T*d*d^T*S efficiently
-    # in three matrix multiplications by first processing the left part S^T*d
-    # and then multyplying it by the right part d^T*S.
-    # Left part is [k, 1] tensor.
-    normalizer_left = torch.mm(torch.transpose(assignments, 0, 1), degrees)
-    # Right part is [1, k] tensor.
-    normalizer_right = torch.mm(torch.transpose(degrees, 0, 1), assignments)
-
-    # Normalizer is rank-1 correction for degree distribution for degrees of the
-    # nodes in the original graph, casted to the pooled graph.
-    normalizer = torch.mm(normalizer_left,
-                           normalizer_right) / 2 / number_of_edges
-    spectral_loss = -torch.trace(graph_pooled -
-                                     normalizer) / 2 / number_of_edges
-    #self.add_loss(spectral_loss) #how to change?
-
-    collapse_loss = torch.norm(cluster_sizes) / number_of_nodes * torch.sqrt(
-        float(self.num_clusters)) - 1
-    spectral_loss += self.collapse_regularization * collapse_loss
-
+    
     features_pooled = torch.mm(torch.transpose(assignments_pooling), features)
     features_pooled = torch.nn.SELU(features_pooled)
     if self.do_unpooling:

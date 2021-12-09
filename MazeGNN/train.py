@@ -6,6 +6,7 @@ from tqdm import trange
 from torch_geometric.loader import DataLoader
 import torch_geometric.nn as pyg_nn
 import matplotlib.pyplot as plt
+import time
 
 from utils import *
 from datagen import *
@@ -45,6 +46,7 @@ def train(dataset, args):
     test_loss = []
     best_loss = 1. #0 choose carefully to something possible
     best_model =  copy.deepcopy(model) 
+    t0=time.perf_counter()
     for epoch in trange(args.epochs, desc="Training", unit="Epochs"):
         total_loss = 0
         model.train()
@@ -62,9 +64,10 @@ def train(dataset, args):
             if args.visualize:
                 visualize(pred, batch, batch.train_mask, tag='Train')
             if args.test:    
-                print('test, ep',epoch)
                 loss_test = test(test_loader, model)
                 test_loss.append(loss_test)
+                t1=time.perf_counter()
+                print('ep:',epoch, ', train loss', loss.item(), ', test loss:', loss_test, t1-t0, 's.')
                 if loss_test < best_loss:
                     best_loss = loss_test
                     best_model = copy.deepcopy(model)
@@ -76,7 +79,7 @@ def train(dataset, args):
         else:
             if args.test:
                 test_loss.append(test_loss[-1])
-                
+        
     if not args.test:
         best_model = copy.deepcopy(model) #just return the final trained model if there is no test
             
@@ -104,6 +107,9 @@ def visualize(pred,data,mask,tag='Train'):
     if type(mask)!=list:
         mask = list(mask)
     original_x = data.x*data.scaler+data.shift
+    ## soft centroid
+    cluster_size = torch.sum(pred[mask],axis=0).reshape(pred[mask].shape[1],1)
+    centroids = torch.div(torch.matmul(pred[mask].t(),original_x[mask]), cluster_size).detach().numpy()
     colors=['r','orange','yellow','g','b']
     num_clusters = pred.shape[1]
     if num_clusters>4:
@@ -116,12 +122,14 @@ def visualize(pred,data,mask,tag='Train'):
     for k in range(pred.shape[1]):
         xi = torch.masked_select(original_x[mask][:,0], pred[mask].max(axis=1).indices==k)
         yi = torch.masked_select(original_x[mask][:,1], pred[mask].max(axis=1).indices==k)
+        ## hard centroid
         xm=xi.mean()
         ym=yi.mean()
         r = k//4
         c = k%4
         axs[r,c].plot(xi,yi, marker='.', color=colors[k%len(colors)],linestyle="None", alpha=0.1)
-        axs[r,c].scatter(xm,ym, marker='*', c=colors[k%len(colors)])
+        axs[r,c].scatter(xm,ym, marker='*',c='k',s=30) 
+        axs[r,c].scatter(centroids[k,0],centroids[k,1], marker='o',c='k',s=20) #c=colors[k%len(colors)])
         axs[r,c].set_title(str(k)+' ('+str(len(xi))+')')
    
     plt.show()

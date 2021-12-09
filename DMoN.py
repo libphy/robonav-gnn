@@ -77,22 +77,22 @@ class DMoN(torch.nn.Module):
     """
     features, adjacency = inputs
 
-    #assert isinstance(features, tf.Tensor)
-    assert isinstance(features, torch.tensor)
-    assert isinstance(adjacency, torch.sparse)
+    
+    assert isinstance(features, Tensor)
+    assert isinstance(adjacency, SparseTensor) #not sure SparseTensor is correct here
     assert len(features.shape) == 2
     assert len(adjacency.shape) == 2
     assert features.shape[0] == adjacency.shape[0]
 
     assignments = torch.nn.Softmax(self.transform(features), dim=1)
-    cluster_sizes = torch.sum(assignments, dim=0).item()  # Size [k].
+    cluster_sizes = torch.sum(assignments, dim=0).item()  # Size [k]. Need to get float from tensor, item() should work...
     assignments_pooling = assignments / cluster_sizes  # Size [n, k].
 
     degrees = torch.sparse.sum(adjacency, dim=0)  # Size [n].
     degrees = torch.reshape(degrees, (-1, 1))
 
     number_of_nodes = adjacency.shape[1]
-    number_of_edges = torch.sum(degrees)
+    number_of_edges = torch.sum(degrees).item() # check you get float here, not tensor
 
     # Computes the size [k, k] pooled graph as S^T*A*S in two multiplications.
     graph_pooled = torch.transpose(
@@ -105,7 +105,7 @@ class DMoN(torch.nn.Module):
     # Left part is [k, 1] tensor.
     normalizer_left = torch.mm(torch.transpose(assignments, 0, 1), degrees)
     # Right part is [1, k] tensor.
-    normalizer_right = torch.mm(torch.transpose(degrees, 0, 1), assignments, transpose_a=True)
+    normalizer_right = torch.mm(torch.transpose(degrees, 0, 1), assignments)
 
     # Normalizer is rank-1 correction for degree distribution for degrees of the
     # nodes in the original graph, casted to the pooled graph.

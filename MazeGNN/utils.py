@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import copy
 
 def maxpool(img, window_size=50):
     newrows = img.shape[0]//window_size+1
@@ -21,7 +22,7 @@ def image2maze(imgpath, start=None, goal=None, startlayer=1, goallayer=2):
     goal:tuple (goal_row_min, goal_row_max, goal_col_min, goal_col_max)
     Returns augmented image [row x col x 3] with depth layers of [start region, goal region, map].
     """
-    maze = plt.imread(imgpath)
+    maze = plt.imread(imgpath).copy()
        
     if maze.shape[-1]==4: # For ppt-saved B/W images, the walllayer is 4th. 
         if (start != None)&(goal != None):
@@ -110,9 +111,9 @@ def extract_edges_and_features_from_image(node_coords, verbose=True):
         if verbose & (n%1000==0):
             t1=time.perf_counter()
             print(n,'/',num_nodes,t1-t0)
-        assert n==edges[n][0],'edge node index not match'
-        assert n==edge_features[n][0],'edge feature node index not match'
-        assert len(edges[n][1])==len(edge_features[n][1]),'number of edges and number of edge features do not match'
+#         assert n==edges[n][0],'edge node index not match'
+#         assert n==edge_features[n][0],'edge feature node index not match'
+#         assert len(edges[n][1])==len(edge_features[n][1]),'number of edges and number of edge features do not match'
         edges_out.extend(edges[n][1])
         edge_features_out.extend(edge_features[n][1])
     t1=time.perf_counter()

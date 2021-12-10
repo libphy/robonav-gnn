@@ -56,7 +56,7 @@ def create_data(args, verbose=True):
         goallayer = args.goallayer
     except AttributeError:
         goallayer = 2        
-        
+ 
     maze_orig = image2maze(args.imgpath, start=args.start, goal=args.goal, startlayer=startlayer, goallayer=goallayer)
     mz = coarse_map(maze_orig,args.poolsize)
     node_coords = np.argwhere(1-mz[:,:,2])

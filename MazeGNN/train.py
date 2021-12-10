@@ -62,7 +62,7 @@ def train(dataset, args):
         
         if epoch % 10 == 0:
             if args.visualize:
-                visualize(pred, batch, batch.train_mask, tag='Train')
+                visualize(pred, batch, batch.train_mask)
             if args.test:    
                 loss_test = test(test_loader, model)
                 test_loss.append(loss_test)
@@ -75,7 +75,7 @@ def train(dataset, args):
                     best_model = copy.deepcopy(model)    #update anyway for now
                 if args.visualize:
                     pred_test = best_model(batch)
-                    visualize(pred_test, batch, batch.test_mask, tag='Test')
+                    visualize(pred_test, batch, batch.test_mask)
         else:
             if args.test:
                 test_loss.append(test_loss[-1])
@@ -90,7 +90,7 @@ def test(loader, test_model, is_validation=False, save_model_preds=False, model_
     total_loss=0
     for batch in loader:
         with torch.no_grad():
-            pred = test_model(batch) #.max(dim=1)[1]
+            pred = test_model(batch)
         mask = batch.val_mask if is_validation else batch.test_mask
         loss = test_model.loss(pred[mask],batch.x[mask])
         total_loss += loss.item() * batch.num_graphs
@@ -98,7 +98,7 @@ def test(loader, test_model, is_validation=False, save_model_preds=False, model_
     return total_loss
 
 
-def visualize(pred,data,mask,tag='Train'):
+def visualize(pred,data,mask, overlay=False):
     """
     pred: before masked
     data: data object
@@ -119,26 +119,42 @@ def visualize(pred,data,mask,tag='Train'):
     else:
         rows=1
         cols=num_clusters
-    fig, axs = plt.subplots(rows, cols, sharex=True, sharey=True, figsize=(15, int(15*aspectratio)))
-      
-    for k in range(pred.shape[1]):
-        xi = torch.masked_select(original_x[mask][:,0], pred[mask].max(axis=1).indices==k)
-        yi = torch.masked_select(original_x[mask][:,1], pred[mask].max(axis=1).indices==k)
-        ## hard centroid
-        xm=xi.mean()
-        ym=yi.mean()
-        r = k//4
-        c = k%4
-        if num_clusters>4:
-            axs[r,c].plot(xi,yi, marker='.', color=colors[k%len(colors)],linestyle="None", alpha=0.1)
-            axs[r,c].scatter(xm,ym, marker='*',c='k',s=30) 
-            axs[r,c].scatter(centroids[k,0],centroids[k,1], marker='o',c='k',s=20) #c=colors[k%len(colors)])
-            axs[r,c].set_title(str(k)+' ('+str(len(xi))+')')
-        else:    
-            axs[c].plot(xi,yi, marker='.', color=colors[k%len(colors)],linestyle="None", alpha=0.1)
-            axs[c].scatter(xm,ym, marker='*',c='k',s=30) 
-            axs[c].scatter(centroids[k,0],centroids[k,1], marker='o',c='k',s=20) #c=colors[k%len(colors)])
-            axs[c].set_title(str(k)+' ('+str(len(xi))+')')
-   
-    plt.show()
+
+    if overlay:
+        fig2 =plt.figure(figsize=(6, 6))
+        
+        for k in range(pred.shape[1]):
+            xi = torch.masked_select(original_x[mask][:,0], pred[mask].max(axis=1).indices==k)
+            yi = torch.masked_select(original_x[mask][:,1], pred[mask].max(axis=1).indices==k)
+            ## hard centroid
+            xm=xi.mean()
+            ym=yi.mean()
+            plt.plot(xi,yi, marker='.', color=colors[k%len(colors)],linestyle="None", alpha=0.1)
+            plt.scatter(xm,ym, marker='*',c='k',s=30) 
+            plt.scatter(centroids[k,0],centroids[k,1], marker='o',c='k',s=20) #c=colors[k%len(colors)])
+        plt.show()
+        
+    else:    
+        fig, axs = plt.subplots(rows, cols, sharex=True, sharey=True, figsize=(15, int(15*aspectratio)))
+
+        for k in range(pred.shape[1]):
+            xi = torch.masked_select(original_x[mask][:,0], pred[mask].max(axis=1).indices==k)
+            yi = torch.masked_select(original_x[mask][:,1], pred[mask].max(axis=1).indices==k)
+            ## hard centroid
+            xm=xi.mean()
+            ym=yi.mean()
+            r = k//4
+            c = k%4
+            if num_clusters>4:
+                axs[r,c].plot(xi,yi, marker='.', color=colors[k%len(colors)],linestyle="None", alpha=0.1)
+                axs[r,c].scatter(xm,ym, marker='*',c='k',s=30) 
+                axs[r,c].scatter(centroids[k,0],centroids[k,1], marker='o',c='k',s=20) #c=colors[k%len(colors)])
+                axs[r,c].set_title(str(k)+' ('+str(len(xi))+')')
+            else:    
+                axs[c].plot(xi,yi, marker='.', color=colors[k%len(colors)],linestyle="None", alpha=0.1)
+                axs[c].scatter(xm,ym, marker='*',c='k',s=30) 
+                axs[c].scatter(centroids[k,0],centroids[k,1], marker='o',c='k',s=20) #c=colors[k%len(colors)])
+                axs[c].set_title(str(k)+' ('+str(len(xi))+')')
+
+        plt.show()
     

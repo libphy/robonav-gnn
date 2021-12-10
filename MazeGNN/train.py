@@ -110,13 +110,15 @@ def visualize(pred,data,mask,tag='Train'):
     ## soft centroid
     cluster_size = torch.sum(pred[mask],axis=0).reshape(pred[mask].shape[1],1)
     centroids = torch.div(torch.matmul(pred[mask].t(),original_x[mask]), cluster_size).detach().numpy()
-    colors=['r','orange','yellow','g','b']
+    colors=['r','orange','yellow','g','b','magenta','purple','turquoise']
     num_clusters = pred.shape[1]
-    if num_clusters>4:
-        rows = num_clusters//4+1
+    if num_clusters>=4:
+        rows = num_clusters//4+1 if num_clusters%4!=0 else num_clusters//4
         cols = 4
         aspectratio = rows/cols
-
+    else:
+        rows=1
+        cols=num_clusters
     fig, axs = plt.subplots(rows, cols, sharex=True, sharey=True, figsize=(15, int(15*aspectratio)))
       
     for k in range(pred.shape[1]):
@@ -127,10 +129,16 @@ def visualize(pred,data,mask,tag='Train'):
         ym=yi.mean()
         r = k//4
         c = k%4
-        axs[r,c].plot(xi,yi, marker='.', color=colors[k%len(colors)],linestyle="None", alpha=0.1)
-        axs[r,c].scatter(xm,ym, marker='*',c='k',s=30) 
-        axs[r,c].scatter(centroids[k,0],centroids[k,1], marker='o',c='k',s=20) #c=colors[k%len(colors)])
-        axs[r,c].set_title(str(k)+' ('+str(len(xi))+')')
+        if num_clusters>4:
+            axs[r,c].plot(xi,yi, marker='.', color=colors[k%len(colors)],linestyle="None", alpha=0.1)
+            axs[r,c].scatter(xm,ym, marker='*',c='k',s=30) 
+            axs[r,c].scatter(centroids[k,0],centroids[k,1], marker='o',c='k',s=20) #c=colors[k%len(colors)])
+            axs[r,c].set_title(str(k)+' ('+str(len(xi))+')')
+        else:    
+            axs[c].plot(xi,yi, marker='.', color=colors[k%len(colors)],linestyle="None", alpha=0.1)
+            axs[c].scatter(xm,ym, marker='*',c='k',s=30) 
+            axs[c].scatter(centroids[k,0],centroids[k,1], marker='o',c='k',s=20) #c=colors[k%len(colors)])
+            axs[c].set_title(str(k)+' ('+str(len(xi))+')')
    
     plt.show()
     
